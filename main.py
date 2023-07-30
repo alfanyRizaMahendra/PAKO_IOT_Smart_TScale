@@ -51,7 +51,7 @@ def get_scale_value():
                 
 class meltingChip(QWidget):
         def db_connect(self,db):
-                # DB settinwg 
+                # DB setting 
                 mydb = db.connect(
                         host = "localhost",
                         user = "root",
@@ -63,6 +63,22 @@ class meltingChip(QWidget):
         
         def __init__(self, timer):
                 super().__init__()
+                
+                # Activating interlock serbuk and Chip FE Reproses
+                self.lock_activated = False
+
+                # setting shift hour 
+                self.now = datetime.datetime.now()
+                self.shift = {
+                        '3' : {"hour" : 0,
+                                "minute" : 0},
+                        '1' : {"hour" : 7,
+                                "minute" : 30},
+                        '2' : {"hour" : 16,
+                                "minute" : 30},
+                } 
+
+                self.day = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
                 self.timer = timer
                 self.separator_count = 0
@@ -72,7 +88,7 @@ class meltingChip(QWidget):
                 self.count_error = 0
 
                 self.timer.timeout.connect(self.update_display)
-                self.timer.start(50)
+                self.timer.start(2000)
 
                 #define variable
                 self.convert_item_to_code = {}
@@ -113,10 +129,14 @@ class meltingChip(QWidget):
                 self.label.setStyleSheet("font-size : 30px;\n")
                 self.label.setObjectName("label")
                 
+                print(self.now.strftime('%A'))
+
                 item = self.get_query("""SELECT * FROM master_data WHERE FLAG=1""")
                 item2 = self.get_query("""SELECT * FROM master_data WHERE FLAG=2""")
-                self.list_items_melt = []
-                self.list_separator = []
+                self.list_items_melt = ['-']
+                self.list_separator = ['-']
+                self.list_separator_per_day = ['-']
+                self.list_separator_weekend = ['-']
                 self.item_code_melt = []
                 self.item_code_separator = []
                 for i in range(len(item)):
@@ -128,8 +148,21 @@ class meltingChip(QWidget):
                         self.list_separator.append(item2[i][2])
                         self.item_code_separator.append(item2[i][1]) 
                         self.convert_item_to_code.update({item2[i][2]:item2[i][1]})   
+
+                for i in range(len(self.day)):
+                        if(self.day[i] != "Saturday" and self.day[i] != "Sunday"):
+                                print(f"saya disini {i}")
+                                self.list_separator_per_day = [item for item in self.list_separator if item != "Serbuk FE"]
+                                #self.item_code_separator_per_day = [item for item in self.item_code_separator if item != "Serbuk FE"]
+                                #self.convert_item_to_code_per_day = {key: value for key, value in self.convert_item_to_code.items() if key != "Serbuk FE"}
+                        else:
+                                self.list_separator_weekend = [item for item in self.list_separator if item != "Chip FE Reproses"]
+                                #self.item_code_separator_weekend = [item for item in self.item_code_separator if item != "Chip FE Reproses"]
+                                #self.convert_item_to_code_weekend = {key: value for key, value in self.convert_item_to_code.items() if key != "Chip FE Reproses"}
                 
-                print(self.convert_item_to_code)
+                print(self.list_separator_weekend)
+                print(self.list_separator_per_day)
+
                 self.comboBox = QtWidgets.QComboBox(self)
                 self.comboBox.setGeometry(QtCore.QRect(20, 290-adjust_height, 365, 71))
                 self.comboBox.setStyleSheet("font-size : 40px;\n""")
@@ -138,14 +171,14 @@ class meltingChip(QWidget):
 
                 # Choosing Melting number
                 self.label_4 = QtWidgets.QLabel(self)
-                self.label_4.setGeometry(QtCore.QRect(450, 140-adjust_height, 271, 51))
+                self.label_4.setGeometry(QtCore.QRect(20, 140-adjust_height, 271, 51))
                 self.label_4.setStyleSheet("font-size : 30px;\n")
                 self.label_4.setObjectName("label_4")
                 
-                list_melting_numbers=['melting 1','melting 2','melting 3','melting 4', "separator"]
+                list_melting_numbers=['-', 'melting 1','melting 2','melting 3','melting 4', "separator"]
                 print(list_melting_numbers[0][:7])
                 self.comboBox_3 = QtWidgets.QComboBox(self)
-                self.comboBox_3.setGeometry(QtCore.QRect(450, 190-adjust_height, 280, 51))
+                self.comboBox_3.setGeometry(QtCore.QRect(20, 190-adjust_height, 280, 51))
                 self.comboBox_3.setStyleSheet("font-size:40px;")
                 self.comboBox_3.setObjectName("comboBox_3")
                 self.comboBox_3.addItems(list_melting_numbers)
@@ -185,40 +218,40 @@ class meltingChip(QWidget):
                 self.comboBox_5.setVisible(False)
 
                 # Melting date                                                                   
-                self.label_2 = QtWidgets.QLabel(self)
-                self.label_2.setGeometry(QtCore.QRect(20, 130-adjust_height, 271, 71))
-                self.label_2.setStyleSheet("font-size : 28px; \n")
-                self.label_2.setObjectName("label_2")
+                # self.label_2 = QtWidgets.QLabel(self)
+                # self.label_2.setGeometry(QtCore.QRect(20, 130-adjust_height, 271, 71))
+                # self.label_2.setStyleSheet("font-size : 28px; \n")
+                # self.label_2.setObjectName("label_2")
 
-                self.dateEdit = QtWidgets.QDateEdit(self)
-                self.dateEdit.setGeometry(QtCore.QRect(20, 190-adjust_height, 190, 51))
-                self.dateEdit.setStyleSheet("font-size : 50px;")
-                self.dateEdit.setDateTime(QtCore.QDateTime(QtCore.QDate(2023, 2, 1), QtCore.QTime(0, 0, 0)))
-                self.dateEdit.setObjectName("dateEdit")
+                # self.dateEdit = QtWidgets.QDateEdit(self)
+                # self.dateEdit.setGeometry(QtCore.QRect(20, 190-adjust_height, 190, 51))
+                # self.dateEdit.setStyleSheet("font-size : 50px;")
+                # self.dateEdit.setDateTime(QtCore.QDateTime(QtCore.QDate(2023, 2, 1), QtCore.QTime(0, 0, 0)))
+                # self.dateEdit.setObjectName("dateEdit")
                 
                 # setting date now to the date edit
-                d = QDate(now.year, now.month, now.day)
-                self.dateEdit.setDate(d)
-                self.dateEdit.setCalendarPopup(True)
+                # d = QDate(now.year, now.month, now.day)
+                # self.dateEdit.setDate(d)
+                # self.dateEdit.setCalendarPopup(True)
 
                 # Choosing shift
-                self.label_3 = QtWidgets.QLabel(self)
-                self.label_3.setGeometry(QtCore.QRect(268, 130-adjust_height, 131, 71))
-                self.label_3.setStyleSheet("font-size : 30px;\n"
-                                           "text-align: center;")
-                self.label_3.setObjectName("label_3")
+                # self.label_3 = QtWidgets.QLabel(self)
+                # self.label_3.setGeometry(QtCore.QRect(310, 130-adjust_height, 131, 71))
+                # self.label_3.setStyleSheet("font-size : 30px;\n"
+                #                            "text-align: center;")
+                # self.label_3.setObjectName("label_3")
 
-                list_shift=['1','2','3']
-                self.comboBox_2 = QtWidgets.QComboBox(self, )
-                self.comboBox_2.setGeometry(QtCore.QRect(225, 190-adjust_height, 160, 51))
-                self.comboBox_2.setStyleSheet("font-size : 40px;")
-                self.comboBox_2.setObjectName("comboBox_2")
-                self.comboBox_2.addItems(list_shift)
+                # list_shift=['1','2','3']
+                # self.comboBox_2 = QtWidgets.QComboBox(self, )
+                # self.comboBox_2.setGeometry(QtCore.QRect(310, 190-adjust_height, 160, 51))
+                # self.comboBox_2.setStyleSheet("font-size : 40px;")
+                # self.comboBox_2.setObjectName("comboBox_2")
+                # self.comboBox_2.addItems(list_shift)
 
                 # pyhon date
                 self.label_5 = QtWidgets.QLabel(self)
-                self.label_5.setGeometry(QtCore.QRect(770, 90, 700, 51))
-                self.label_5.setStyleSheet("font-size : 40px;")
+                self.label_5.setGeometry(QtCore.QRect(680, 100, 700, 51))
+                self.label_5.setStyleSheet("font-size : 60px;")
                 self.label_5.setObjectName("label_5")
 
                 # Kg Unit
@@ -252,14 +285,14 @@ class meltingChip(QWidget):
 
                 self.pushButton.setText(_translate("MainWindow", "Pako Smart tScale"))
                 self.label.setText(_translate("MainWindow", "Pilih Material"))
-                self.label_2.setText(_translate("MainWindow", "Tanggal Melting"))
-                self.label_3.setText(_translate("MainWindow", "Shift"))
+                #self.label_2.setText(_translate("MainWindow", "Tanggal Melting"))
+                #self.label_3.setText(_translate("MainWindow", "Shift"))
                 self.label_4.setText(_translate("MainWindow", "Lini"))
                 self.pushButton_2.setText(_translate("MainWindow", "Kirim"))
                 #self.pushButton_3.setText(_translate("MainWindow", "Separator"))
                 self.label_6.setText(_translate("MainWindow", "Kg"))
-                self.label_7.setText(_translate("MainWindow", "Hijau"))
-                self.label_8.setText(_translate("MainWindow", "Merah"))
+                self.label_7.setText(_translate("MainWindow", "")) # box hijau
+                self.label_8.setText(_translate("MainWindow", "")) # box merah
                 self.setWindowTitle(_translate("MainWindow", "Timbangan ZPF"))
 
                 QtCore.QMetaObject.connectSlotsByName(self)
@@ -274,6 +307,20 @@ class meltingChip(QWidget):
                     item.append(row) 
                 return item
         
+        def check_shift(self, waktu, shift_kerja):
+                self.ringing = []
+                self.b = ""
+                for shift, alarm_time in zip(shift_kerja.keys(), shift_kerja.values()):
+                        self.ringing.append([shift, (int(alarm_time['hour']) * 60 +  int(alarm_time['minute']))])
+
+                if self.ringing[0][1] <= waktu:
+                        self.b = self.ringing[0][0]
+                if self.ringing[1][1] <= waktu:
+                        self.b = self.ringing[1][0]
+                if self.ringing[2][1] <= waktu:
+                        self.b = self.ringing[2][0]
+                return self.b
+        
         def update_display(self):
                 self.stop_event = threading.Event()
                 self.thread = threading.Thread(target=self.display)
@@ -281,26 +328,48 @@ class meltingChip(QWidget):
 
         def display(self):
                 _translate = QtCore.QCoreApplication.translate
-                line = self.comboBox_3.currentText()
-                if(line == "separator"):
+                self.line = self.comboBox_3.currentText()
+                self_now = "Monday"
+                if(self.line == "separator"):
                         if(self.separator_count < 1):
-                                self.visible_choice(True)
-                                self.comboBox.clear()
-                                self.comboBox.addItems(self.list_separator)
-                                self.separator_count += 1
-                                self.melting_count = 0
+                                if(self.lock_activated):
+                                        if(self_now != "Saturday" and self_now != "Sunday"):
+                                                self.item_dissapear(False)
+                                                self.visible_choice(True)
+                                                self.comboBox.clear()
+                                                self.comboBox.addItems(self.list_separator_per_day)
+                                                self.separator_count += 1
+                                                self.melting_count = 0
+                                        else:
+                                                self.item_dissapear(False)
+                                                self.visible_choice(True)
+                                                self.comboBox.clear()
+                                                self.comboBox.addItems(self.list_separator_weekend)
+                                                self.separator_count += 1
+                                                self.melting_count = 0
+                                else:
+                                        self.item_dissapear(False)
+                                        self.visible_choice(True)
+                                        self.comboBox.clear()
+                                        self.comboBox.addItems(self.list_separator)
+                                        self.separator_count += 1
+                                        self.melting_count = 0
 
-                if(line[:7] == "melting"):  
+                if(self.line[:7] == "melting"):  
                         if(self.melting_count < 1):
+                                self.item_dissapear(False)
                                 self.visible_choice(False)
                                 self.comboBox.clear()
                                 self.comboBox.addItems(self.list_items_melt)
                                 self.separator_count = 0
                                 self.melting_count += 1 
+                if(self.line == "-"):
+                        self.item_dissapear(True)
 
-                # update time
-                now = datetime.datetime.now()
-                self.label_5.setText(_translate("MainWindow",now.strftime("%d-%m-%Y"), None))
+                # check if the current time is past the alarm time
+                self.now = datetime.datetime.now()
+                self.label_5.setText(_translate("MainWindow",self.now.strftime("%d-%m-%Y"), None))
+                self.time = int(self.now.hour) * 60 + int(self.now.minute)
 
                 # update weight scale
                 self.scale_value = get_scale_value()
@@ -311,52 +380,79 @@ class meltingChip(QWidget):
                 self.stop_event.set()
         
         def visible_choice(self, condition):
-                        self.comboBox_4.setVisible(condition)
-                        self.comboBox_5.setVisible(condition)
+                        self.comboBox_4.setVisible(False)
+                        self.comboBox_5.setVisible(False)
                         self.label_7.setVisible(condition)
                         self.label_8.setVisible(condition) 
+        
+        # dissapear the material item
+        def item_dissapear(self, condition):
+                _translate = QtCore.QCoreApplication.translate
+                if(condition):
+                        self.comboBox.setVisible(not condition)
+                        self.label.setText(_translate("MainWindow", ""))
+                else:
+                        self.comboBox.setVisible(not condition)
+                        self.label.setText(_translate("MainWindow", "Pilih Material"))
 
         def update(self):
                 _translate = QtCore.QCoreApplication.translate
-                line = self.comboBox_3.currentText()
-                # update weight scale
-                if(self.convert_item_to_code[self.comboBox.currentText()] == "RA00000077"):
-                        self.red_box = int(self.comboBox_4.currentText()) * weight_list[0]
-                        self.green_box = int(self.comboBox_5.currentText()) * weight_list[1]
-                        self.trolley = weight_list[2]
-                        self.berat = float(get_scale_value())
-                        #self.scale_value = float(berat_timbangan[self.random_index]) - self.red_box - self.green_box - self.trolley
-                        self.berat_total =  self.berat - (self.red_box + self.green_box + self.trolley)
-                        self.berat_total = format(self.berat_total, ".2f")
-                        print("Berat timbangan separator : ", end="")
-                        print(self.berat_total)
-                        print("Berat Timbangan = {} \t Berat box merah = {} \t Berat box hijau = {} \t Berat Trolley = {}".format(self.berat, self.red_box, self.green_box, self.trolley))
-                else:
-                        self.berat_total = get_scale_value()
-                        print("Berat timbangan melting : ", end="") 
-                        print(self.berat_total)
-                        
-                message_information = "Berat = " + str(self.berat_total) + " Kg\n" + "Lini = " + self.comboBox_3.currentText() + "\nShift = " + str(self.comboBox_2.currentText()) + "\n\nBerhasil Diupload !!!"
                 
-                # prevent backdate
-                day = self.dateEdit.date().toPyDate().day
-                shift = str(self.comboBox_2.currentText()) 
-                data = [str(self.dateEdit.date().toPyDate()), str(self.comboBox_2.currentText()), str(self.comboBox_3.currentText()), str(self.comboBox.currentText()), self.convert_item_to_code[self.comboBox.currentText()], str(self.scale_value)]
-                self.update_data(data, message_information)
+                if(self.comboBox.currentText() == "-" or self.comboBox_3.currentText() == "-"):
+                        self.notification("Gagal", "Mohon periksa lini dan material Anda !!!") 
+                else: 
+                        # update weight scale
+                        if(self.convert_item_to_code[self.comboBox.currentText()] == "RA00000077"):
+                                self.red_box = int(self.comboBox_4.currentText()) * weight_list[0]
+                                self.green_box = int(self.comboBox_5.currentText()) * weight_list[1]
+                                self.trolley = weight_list[2]
+                                self.berat = float(get_scale_value())
+                                #self.scale_value = float(berat_timbangan[self.random_index]) - self.red_box - self.green_box - self.trolley
+                                self.berat_total =  self.berat - (self.red_box + self.green_box + self.trolley)
+                                self.berat_total = format(self.berat_total, ".2f")
+                                print("Berat timbangan separator : ", end="")
+                                print(self.berat_total)
+                                print("Berat Timbangan = {} \t Berat box merah = {} \t Berat box hijau = {} \t Berat Trolley = {}".format(self.berat, self.red_box, self.green_box, self.trolley))
+                        else:
+                                self.berat_total = get_scale_value()
+                                print("Berat timbangan melting : ", end="") 
+                                print(self.berat_total)
 
-                #if(shift == '3'):
-                #        if(day >= datetime.datetime.now().day-1 and day < datetime.datetime.now().day+1): 
-                #                # update data
-                #                self.update_data(data, message_information)
-                #        else:
-                #                self.fail_notification()
+                        # check if the current time is past the alarm time
+                        self.time = int(self.now.hour) * 60 + int(self.now.minute)
+                        self.shift_now = "0"
 
-                #else:
-                #        if(day is datetime.datetime.now().day):
-                                # update data
-                #                self.update_data(data, message_information)
-                #        else:
-                #                self.fail_notification()  
+                        # update shift 
+                        self.shift_now = self.check_shift(self.time, self.shift)
+                        print(self.shift_now)
+
+                        self.message_confirm = "Berat = " + str(self.berat_total) + " Kg\n" + "Lini = " + self.comboBox_3.currentText() + "\nShift = " + str(self.shift_now) + "\n\nApakah Sudah Benar?"
+                        self.message_information = "Data timbangan : \n Berat = " + str(self.berat_total) + " Kg\n" + "Lini = " + self.comboBox_3.currentText() + "\nShift = " + str(self.shift_now) + "\n\nBerhasil Diupload !!!"
+                        
+                        # prevent backdate
+                        #day = self.dateEdit.date().toPyDate().day
+                        #shift = str(self.comboBox_2.currentText()) 
+
+                        self.data = [str(datetime.datetime.now()), str(self.shift_now), str(self.comboBox_3.currentText()), str(self.comboBox.currentText()), self.convert_item_to_code[self.comboBox.currentText()], str(self.scale_value)]
+                        self.confirm = self.confirmation(self.message_confirm)
+
+                        if(self.confirm):
+                                self.update_data(self.data, self.message_information)
+
+                        #if(shift == '3'):
+                        #        if(day >= datetime.datetime.now().day-1 and day < datetime.datetime.now().day+1): 
+                        #                # update data
+                        #                self.update_data(data, message_information)
+                        #        else:
+                        #                self.fail_notification()
+
+                        #else:
+                        #        if(day is datetime.datetime.now().day):
+                                        # update data
+                        #                self.update_data(data, message_information)
+                        #        else:
+                        #                self.fail_notification()
+                        
                 
         def update_data(self, data, message):
                 
@@ -365,14 +461,17 @@ class meltingChip(QWidget):
 
                 try:
                 # update excel
-                        self.update_excel(self.data)
+                        #self.update_excel(self.data)
                         
                         # Update DB
                         mycursor = self.mydb.cursor()
-                        sql = """insert into transaction (DATETIME, TANGGAL_MELTING, SHIFT, LINI_MELTING, JENIS_MATERIAL, ITEM_CODE, BERAT) values ('%s','%s','%s','%s','%s','%s','%s')"""%(str(datetime.datetime.now()), self.data[0], self.data[1], self.data[2], self.data[3], self.data[4], self.data[5])
+                        sql = """insert into transaction (DATETIME, TANGGAL_MELTING, SHIFT, LINI_MELTING, JENIS_MATERIAL, ITEM_CODE, BERAT) values ('%s','%s','%s','%s','%s','%s','%s')"""%(str(datetime.datetime.now()), str(datetime.datetime.now()), self.data[1], self.data[2], self.data[3], self.data[4], self.data[5])
                         mycursor.execute(sql)
                         self.mydb.commit()
                         self.notification("Success", self.message)
+                        self.comboBox.setCurrentText("-")
+                        self.comboBox_3.setCurrentText("-")
+                        
                 except self.db.errors.InterfaceError as err:
                         # Handle the connection error
                         print("Pesan Error upload : ", err)
@@ -423,6 +522,18 @@ class meltingChip(QWidget):
                 wb.save(filename=file_name)
                 wb.close()
         
+        def confirmation(self, information):
+                # notification
+                qmsgBox = QMessageBox()
+                qmsgBox.setMinimumSize(300,200)
+                qmsgBox.setMaximumSize(600,400)
+                qmsgBox.setStyleSheet('width = 430px')
+                self.reply = qmsgBox.question(self, "Apa anda yakin ?", information, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                if self.reply == QMessageBox.Yes:
+                        return True
+                else: 
+                        return False
+                
         def notification(self, message, information):
                 # notification
                 qmsgBox = QMessageBox()
